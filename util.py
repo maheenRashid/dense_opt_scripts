@@ -1,0 +1,155 @@
+import numpy as np;
+import scipy
+import subprocess;
+import os;
+
+def readFlowFile(file_name,flip=False):
+    data2D=None
+    with open(file_name,'rb') as f:
+        magic = np.fromfile(f, np.float32, count=1)
+        if 202021.25 != magic:
+            print 'Magic number incorrect. Invalid .flo file'
+        else:
+            w = np.fromfile(f, np.int32, count=1)
+            h = np.fromfile(f, np.int32, count=1)
+            if w.size==0 or h.size==0:
+                # print type(w),type(h),w,h
+                data2D=None;
+            else:               
+                # print (w, h)
+                data = np.fromfile(f, np.float32, count=2*w*h)
+                # Reshape data into 3D array (columns, rows, bands)
+                # if flip is True:
+                #     data2D = np.resize(data, (w, h, 2))
+                #     data2D = data2D.
+                #     data2D = np.reshape(data, (h, w, 2))
+                #     # ,order='F')
+                # else:
+                data2D = np.reshape(data, (h, w, 2))
+                # print data2D.shape
+    return data2D
+
+
+def getIndexingArray(big_array,small_array):
+    small_array=np.array(small_array);
+    big_array=np.array(big_array);
+    assert np.all(np.in1d(small_array,big_array))
+
+    big_sort_idx= np.argsort(big_array)
+    small_sort_idx= np.searchsorted(big_array[big_sort_idx],small_array)
+    index_arr = big_sort_idx[small_sort_idx]
+    return index_arr
+
+def mkdir(dir_curr):
+    if not os.path.exists(dir_curr):
+        os.mkdir(dir_curr);
+
+def getIdxRange(num_files,batch_size):
+    idx_range=range(0,num_files+1,batch_size);
+    if idx_range[-1]!=num_files:
+        idx_range.append(num_files);
+    return idx_range;
+
+def readLinesFromFile(file_name):
+    with open(file_name,'rb') as f:
+        lines=f.readlines();
+    lines=[line.strip('\n') for line in lines];
+    return lines
+
+def normalize(matrix,gpuFlag=False):
+    if gpuFlag==True:
+        import cudarray as ca
+        norm=ca.sqrt(ca.sum(ca.power(matrix,2),1,keepdims=True));
+        matrix_n=matrix/norm
+    else:
+        norm=np.sqrt(np.sum(np.square(matrix),1,keepdims=True));
+        matrix_n=matrix/norm
+    
+    return matrix_n
+
+def getHammingDistance(indices,indices_hash):
+    ham_dist_all=np.zeros((indices_hash.shape[0],));
+    for row in range(indices_hash.shape[0]):
+        ham_dist_all[row]=scipy.spatial.distance.hamming(indices[row],indices_hash[row])
+    return ham_dist_all    
+
+def product(arr):
+    p=1;
+    for l in arr:
+        p *= l
+    return p;
+
+def getIOU(box_1,box_2):
+    box_1=np.array(box_1);
+    box_2=np.array(box_2);
+    minx_t=min(box_1[0],box_2[0]);
+    miny_t=min(box_1[1],box_2[1]);
+    min_vals=np.array([minx_t,miny_t,minx_t,miny_t]);
+    box_1=box_1-min_vals;
+    box_2=box_2-min_vals;
+    # print box_1,box_2
+    maxx_t=max(box_1[2],box_2[2]);
+    maxy_t=max(box_1[3],box_2[3]);
+    img=np.zeros(shape=(maxx_t,maxy_t));
+    img[box_1[0]:box_1[2],box_1[1]:box_1[3]]=1;
+    img[box_2[0]:box_2[2],box_2[1]:box_2[3]]=img[box_2[0]:box_2[2],box_2[1]:box_2[3]]+1;
+    # print np.min(img),np.max(img)
+    count_union=np.sum(img>0);
+    count_int=np.sum(img==2);
+    # print count_union,count_int
+    # plt.figure();
+    # plt.imshow(img,vmin=0,vmax=10);
+    # plt.show();
+    iou=count_int/float(count_union);
+    return iou
+
+def escapeString(string):
+    special_chars='!"&\'()*,:;<=>?@[]`{|}';
+    for special_char in special_chars:
+        string=string.replace(special_char,'\\'+special_char);
+    return string
+
+def replaceSpecialChar(string,replace_with):
+    special_chars='!"&\'()*,:;<=>?@[]`{|}';
+    for special_char in special_chars:
+        string=string.replace(special_char,replace_with);
+    return string
+
+def writeFile(file_name,list_to_write):
+    with open(file_name,'wb') as f:
+        for string in list_to_write:
+            f.write(string+'\n');
+
+def getAllSubDirectories(meta_dir):
+    meta_dir=escapeString(meta_dir);
+    command='find '+meta_dir+' -type d';
+    sub_dirs=subprocess.check_output(command,shell=True)
+    sub_dirs=sub_dirs.split('\n');
+    sub_dirs=[dir_curr for dir_curr in sub_dirs if dir_curr];
+    return sub_dirs
+    
+def writeHTML(file_name,im_paths,captions,height=200,width=200):
+    f=open(file_name,'w');
+    html=[];
+    f.write('<!DOCTYPE html>\n');
+    f.write('<html><body>\n');
+    f.write('<table>\n');
+    for row in range(len(im_paths)):
+        f.write('<tr>\n');
+        for col in range(len(im_paths[row])):
+            f.write('<td>');
+            f.write(captions[row][col]);
+            f.write('</td>');
+            f.write('    ');
+        f.write('\n</tr>\n');
+
+        f.write('<tr>\n');
+        for col in range(len(im_paths[row])):
+            f.write('<td><img src="');
+            f.write(im_paths[row][col]);
+            f.write('" height='+str(height)+' width='+str(width)+'"/></td>');
+            f.write('    ');
+        f.write('\n</tr>\n');
+        f.write('<p></p>');
+    f.write('</table>\n');
+    f.close();
