@@ -38,9 +38,8 @@ def visualizeFlo(flo,file_name_x,file_name_y):
 
 def createScatterOfDiffsAndDistances(diffs,title,xlabel,ylabel,out_file,dists=None):
     plt.figure();
-    plt.title(title);
-    plt.xlabel(xlabel);
-    plt.ylabel(ylabel);
+    
+    
 
     print out_file
 
@@ -166,12 +165,12 @@ def plotSimple(xAndYs,out_file,title='',xlabel='',ylabel='',legend_entries=None,
     for x,y in xAndYs:
         handle,=plt.plot(x,y);
         handles.append(handle);
-    if plt.legend is not None:
+    if legend_entries is not None:
         if outside:
             lgd=plt.legend(handles,legend_entries,loc=loc,bbox_to_anchor=(1.05, 1),borderaxespad=0.)
         else:
             lgd=plt.legend(handles,legend_entries,loc=loc)    
-    if plt.legend is not None:
+    if legend_entries is not None:
         plt.savefig(out_file,bbox_extra_artists=(lgd,), bbox_inches='tight')
     else:
         plt.savefig(out_file);

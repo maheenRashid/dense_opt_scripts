@@ -246,34 +246,140 @@ def script_visualizeTifAsIm(tif_dir,im_dir,inc,out_tif,out_file_html,rel_path):
     
     visualize.writeHTML(out_file_html,rows_all,captions_all);
 
-def main():
-    dir_meta='/disk2/marchExperiments/ucf-101-new';
-    out_dir_network='/disk2/marchExperiments/network_ucf';
-    util.mkdir(out_dir_network);
-    out_file_train=os.path.join(out_dir_network,'train.txt');
+def sortTifNames(names):
+    nums=[int(name[name.rindex('_')+1:name.rindex('.')]) for name in names];
+    nums_sorted=nums[:];
+    nums_sorted.sort();
+    names_sorted=[];
+    for num_no_idx,num_no in enumerate(nums_sorted):
+        idx_org=nums.index(num_no);
+        names_sorted.append(names[idx_org]);
+    return names_sorted;
 
-    video_dirs=[os.path.join(dir_meta,vid_dir) for vid_dir in os.listdir(dir_meta) if os.path.isdir(os.path.join(dir_meta,vid_dir))];
+def writeTrainTxt(out_file_train,video_dirs,im_dir,tif_dir,subsample=5):
     print len(video_dirs);
+
     # video_dirs=video_dirs[:10];
     pairs=[];
     for idx_vid_dir,vid_dir in enumerate(video_dirs):
-        print idx_vid_dir
-        tif_dir=os.path.join(vid_dir,'tif');
-        im_dir=os.path.join(vid_dir,'im');
-        tif_names=[file_curr for file_curr in os.listdir(tif_dir) if file_curr.endswith('.tif')];
-        for tif_name in tif_names:
-            jpg_file=os.path.join(im_dir,tif_name.replace('.tif','.jpg'));
+        print idx_vid_dir,vid_dir
+        tif_dir_curr=os.path.join(vid_dir,tif_dir);
+        im_dir_curr=os.path.join(vid_dir,im_dir);
+        tif_names=[file_curr for file_curr in os.listdir(tif_dir_curr) if file_curr.endswith('.tif')];
+        tif_names=sortTifNames(tif_names);
+
+        for tif_name in tif_names[::subsample]:
+            # print tif_name
+            jpg_file=os.path.join(im_dir_curr,tif_name.replace('.tif','.jpg'));
+
+            # print jpg_file,os.path.exists(jpg_file)
             if os.path.exists(jpg_file):
-                tif_file=os.path.join(tif_dir,tif_name);
+                # print jpg_file
+                tif_file=os.path.join(tif_dir_curr,tif_name);
                 pairs.append(jpg_file+' '+tif_file);
 
+        # raw_input();
+
     print len(pairs);
+    # print pairs[:10];
+    # pair_one=[p[:p.index(' ')] for p in pairs];
+    # vid_dirs=[p[:p[:p.rindex('/')].rindex('/')] for p in pair_one];
+    # print len(set(vid_dirs));
+    random.shuffle(pairs);
     util.writeFile(out_file_train,pairs);
 
-    # lines=util.readLinesFromFile(out_file_train);
-    # print len(lines);
-    # for line in lines:
-    #     print line;
+
+def getTrainingCommand(path_train,path_solver,path_weights=None,path_snapshot=None,path_log=None):
+    command=['GLOG_logtostderr=1'];
+    command.append(path_train);
+    command.append('train');
+    command.append('-solver='+path_solver);
+    if path_weights is not None:
+        command.append('-weights');
+        command.append(path_weights);
+    if path_snapshot is not None:
+        command.append('--snapshot');
+        command.append(path_snapshot);
+    if path_log is not None:
+        command.append('2>&1 | tee');
+        command.append(path_log);
+
+    command=' '.join(command);
+    return command;
+
+def main():
+
+    dir_network='/disk2/marchExperiments/network_100_5/results_im'
+    out_file_html=os.path.join(dir_network,'visualize.html');
+    im_files=[os.path.join(dir_network,file_curr) for file_curr in os.listdir(dir_network)];
+    rel_path=['/disk2','../../../..'];
+    im_files=[[file_curr.replace(rel_path[0],rel_path[1])] for file_curr in im_files];
+    captions=[[' ']]*len(im_files);
+    visualize.writeHTML(out_file_html,im_files,captions);
+
+    return
+
+    train_file=os.path.join(dir_network,'train.txt');
+    test_file=os.path.join(dir_network,'test.txt');
+    lines=util.readLinesFromFile(train_file);
+    test=[];
+    print train_file
+    print len(lines);
+    for line in lines:
+        test_file_curr=line[:line.index(' ')];
+        test_file_curr=test_file_curr+' 1';
+        test.append(test_file_curr);
+    print len(test)
+
+    util.writeFile(test_file,test);
+
+
+
+    return
+    dir_network='/disk2/marchExperiments/network_100_5'
+    path_train='/home/maheenrashid/Downloads/debugging_jacob/optical_flow_prediction/build/tools/caffe';
+    path_solver=os.path.join(dir_network,'train.prototxt');
+
+    # path_weights='/home/maheenrashid/Downloads/debugging_jacob/optical_flow_prediction/models/bvlc_alexnet/bvlc_alexnet.caffemodel';
+    path_snapshot='/disk2/marchExperiments/network_100_5/OptFlow_snapshot_iter_900.solverstate';
+    path_log=os.path.join(dir_network,'log_stepsizechanged.log');
+
+    command=getTrainingCommand(path_train,path_solver,path_snapshot=path_snapshot,path_log=path_log)
+    print command
+    return
+
+    dir_meta='/disk2/marchExperiments/ucf-101-new';
+    out_dir_network='/disk2/marchExperiments/network_100_5';
+    util.mkdir(out_dir_network);
+
+    out_file_train=os.path.join(out_dir_network,'train.txt');
+    video_dirs_file=os.path.join(out_dir_network,'video_dirs.p');
+    video_dirs=pickle.load(open(video_dirs_file,'rb'));
+    for vid in video_dirs:
+        print vid;
+    # return
+    # video_dirs=['/disk2/marchExperiments/ucf-101-new/v_BoxingPunchingBag_g01_c01']
+    im_dir='im';
+    tif_dir='tif';
+    # video_dirs=[os.path.join(dir_meta,vid_dir) for vid_dir in os.listdir(dir_meta) if os.path.isdir(os.path.join(dir_meta,vid_dir))];
+    # random.shuffle(video_dirs);
+    # video_dirs=video_dirs[:100];
+    writeTrainTxt(out_file_train,video_dirs,im_dir,tif_dir)
+    # pickle.dump(video_dirs,open(os.path.join(out_dir_network,'video_dirs.p'),'wb'));
+
+    return
+
+    
+    # out_dir='/disk2/marchExperiments/ucf-101-new'
+    # clusters_file = os.path.join(out_dir,'clusters_100000_full.npy');
+    # out_file=os.path.join('/disk2/marchExperiments/ucf-101-new','clusters_100000_full.mat');
+    # data=np.load(clusters_file);
+    # scipy.io.savemat(out_file,{'C':data});
+    # print out_file;
+
+    
+
+    # return    
         
 
 
