@@ -1,6 +1,7 @@
 import util;
 import os;
 import visualize;
+import sys;
 # import matplotlib.pyplot as plt;
 
 def getIterationsAndLosses(log_file,str_match,iter_str='Iteration ',score_str='loss = '):
@@ -20,29 +21,30 @@ def getIterationsAndLosses(log_file,str_match,iter_str='Iteration ',score_str='l
             losses.append(loss);
     return iterations,losses;
 
-def main():
+def main(args):
     # file_curr='log.log';
-    dir_curr='/disk2/marchExperiments/network_100_5'
+    # dir_curr='/disk2/marchExperiments/network_100_5'
     # /log_2.log
-    file_curr=os.path.join(dir_curr,'log_stepsizechanged.log');
-    file_old=os.path.join(dir_curr,'log.log');
-    out_file=os.path.join(dir_curr,'loss_graph.png');
-
+    # file_curr=os.path.join(dir_curr,'log_stepsizechanged.log');
+    # file_old=os.path.join(dir_curr,'log.log');
+    # out_file=os.path.join(dir_curr,'loss_graph.png');
+    file_old=args[1];
+    out_file=args[2];
     str_match=' solver.cpp:209] Iteration ';
     
     # lines=util.readLinesFromFile(file_curr);
-    iterations,losses=getIterationsAndLosses(file_curr,str_match);    
-    iterations_old,losses_old=getIterationsAndLosses(file_old,str_match);    
+    # iterations,losses=getIterationsAndLosses(file_curr,str_match);    
+    iterations,losses=getIterationsAndLosses(file_old,str_match);    
 
-    idx=iterations_old.index(880)
-    print idx;
-    print iterations[0];
-    iterations_old=iterations_old[:idx];
-    losses_old=losses_old[:idx];
-    iterations_old.extend(iterations);
-    losses_old.extend(losses);
-    iterations=iterations_old;
-    losses=losses_old;
+    # idx=iterations_old.index(880)
+    # print idx;
+    # print iterations[0];
+    # iterations_old=iterations_old[:idx];
+    # losses_old=losses_old[:idx];
+    # iterations_old.extend(iterations);
+    # losses_old.extend(losses);
+    # iterations=iterations_old;
+    # losses=losses_old;
 
     title='Iterations vs Loss at '+str(iterations[-1]);
     # file_curr='log_1.log';
@@ -65,4 +67,4 @@ def main():
 
 
 if __name__=='__main__':
-    main();
+    main(sys.argv);

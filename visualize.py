@@ -230,6 +230,31 @@ def plotGroupBar(out_file,dict_vals,xtick_labels,legend_vals,colors,xlabel='',yl
     plt.savefig(out_file, bbox_inches='tight');
     plt.close();  
 
+def plotScatter(xAndYs,out_file,title='',xlabel='',ylabel='',color=None):
+    if color is None:
+        color=[None]*len(xAndYs);
+    plt.title(title);
+    plt.xlabel(xlabel);
+    plt.ylabel(ylabel);
+    # assert len(xs)==len(ys)
+    handles=[];
+    for idx,(x,y) in enumerate(xAndYs):
+        # print color,color[idx],x,y
+        plt.scatter(x, y, c=color[idx])
+        # handle,=plt.plot(x,y);
+        # handles.append(handle);
+    # if legend_entries is not None:
+    #     if outside:
+    #         lgd=plt.legend(handles,legend_entries,loc=loc,bbox_to_anchor=(1.05, 1),borderaxespad=0.)
+    #     else:
+    #         lgd=plt.legend(handles,legend_entries,loc=loc)    
+    # if legend_entries is not None:
+    #     plt.savefig(out_file,bbox_extra_artists=(lgd,), bbox_inches='tight')
+    # else:
+    plt.savefig(out_file);
+    plt.close();    
+
+
 
 
 def main():

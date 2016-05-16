@@ -307,8 +307,116 @@ def getTrainingCommand(path_train,path_solver,path_weights=None,path_snapshot=No
     command=' '.join(command);
     return command;
 
+
+def writeTrainTxtDeepFlow(dir_videos,out_file,subsample=5):
+    pairs=[];
+    for idx_dir_video,dir_video in enumerate(dir_videos):
+        if idx_dir_video%100==0:
+            print idx_dir_video
+        files_jpg=[os.path.join(dir_video,file_curr) for file_curr in os.listdir(dir_video) if file_curr.endswith('.tif')];
+        files_jpg.sort();
+        files_jpg=files_jpg[::subsample];
+        files_tif=[file_curr.replace('.tif','.jpg') for file_curr in files_jpg];
+        # for file_curr in files_jpg:
+        #     print file_curr
+        # raw_input();
+        pairs.extend(zip(files_tif,files_jpg));
+
+    print len(pairs);
+    # print pairs[:10];
+    pairs_txt=[pair[0]+' '+pair[1] for pair in pairs];
+    random.shuffle(pairs_txt)
+    util.writeFile(out_file,pairs_txt);
+
+def script_getClassFrameMeanCountYoutube(dir_meta):
+    dirs_video=[os.path.join(dir_meta,dir_curr) for dir_curr in os.listdir(dir_meta) if os.path.isdir(os.path.join(dir_meta,dir_curr))];
+    print len(dirs_video);
+    lens=[];
+    types=[];
+    for idx_dir_curr,dir_curr in enumerate(dirs_video):
+        if idx_dir_curr%100==0:
+            print idx_dir_curr;
+
+        dir_curr_im=os.path.join(dir_curr,'images_transfer');
+        command='ls '+dir_curr_im+'/*.jpg | wc -l';
+        # print command
+        # commands.append(command);
+        response=subprocess.check_output(command,shell=True);
+        lens.append(int(response));
+
+        type_curr=dir_curr[dir_curr.rindex('/')+1:];
+        type_curr=type_curr[:type_curr.index('_')];
+        # print type_curr
+        types.append(type_curr);
+        # print command;
+        # print int(response);
+        # raw_input();
+    
+    lens_np=np.array(lens);
+    types_np=np.array(types);
+
+    counts=[];
+    for type_curr in set(types):
+        print type_curr,
+        idx=np.where(types_np==type_curr);
+        count_curr=np.sum(lens_np[idx]);
+        print count_curr;
+        counts.append(count_curr)
+
+    print counts
+    print set(types);
+
+    print np.mean(counts);
+
+
+
 def main():
 
+    dir_meta='/disk2/marchExperiments/hmdb_try_2/hmdb';
+    dir_images='images'
+    
+    out_txt='/disk2/marchExperiments/finetuning_hmdb/train.txt';
+    out_txt_youtube='/disk2/marchExperiments/finetuning_youtube_hmdb/train.txt';
+    out_txt_final='/disk2/marchExperiments/finetuning_youtube_hmdb/train_both.txt';
+
+    hmdb_files=util.readLinesFromFile(out_txt);
+    youtube_files=util.readLinesFromFile(out_txt_youtube);
+    print len(hmdb_files),len(youtube_files);
+    len_to_pick=13765
+    random.shuffle(hmdb_files);
+    hmdb_to_add=hmdb_files[:len_to_pick];
+    total_lines=youtube_files+hmdb_to_add;
+    print len(total_lines);
+    random.shuffle(total_lines);
+    print total_lines[13790]
+    print total_lines[4]
+    util.writeFile(out_txt_final,total_lines);
+
+
+    return
+    dir_meta='/disk2/marchExperiments/youtube'
+    dir_images='images_transfer'
+    out_txt='/disk2/marchExperiments/finetuning_youtube_hmdb/train.txt';
+
+    videos=[];
+    for dir_curr in os.listdir(dir_meta):
+        if os.path.isdir(os.path.join(dir_meta,dir_curr)):
+            if dir_curr=='Lock':
+                print 'FOUND THE LOCK';
+            else:
+                videos.append(os.path.join(dir_meta,dir_curr,dir_images));
+
+    # videos=[os.path.join(dir_meta,dir_curr) for dir_curr in os.listdir(dir_meta) if os.path.join(dir_meta,dir_curr)
+    
+    writeTrainTxtDeepFlow(videos,out_txt,subsample=1)
+    
+    print out_txt
+
+    # print len(videos);
+    # for video in videos[:10]:
+    #     print video;
+
+    return
     dir_network='/disk2/marchExperiments/network_100_5/results_im'
     out_file_html=os.path.join(dir_network,'visualize.html');
     im_files=[os.path.join(dir_network,file_curr) for file_curr in os.listdir(dir_network)];
