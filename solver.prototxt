@@ -1,0 +1,13 @@
+train_net: $DEPLOY_FILE
+base_lr: $BASE_LR
+lr_policy: "step"
+gamma: 0.1
+stepsize: 50000
+display: 20
+max_iter: 450000
+momentum: 0.9
+weight_decay: 0.0005
+snapshot: $SNAPSHOT
+snapshot_prefix: $SNAPSHOT_PREFIX
+solver_mode: GPU
+device_id: 1

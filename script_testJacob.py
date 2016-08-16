@@ -126,7 +126,7 @@ def dump_main():
 
 	return
 
-def getCommandForTest(test_file,model_file,gpu,batch_size=100):
+def getCommandForTest(test_file,model_file,gpu,batch_size=100,train_val_file=None):
 	gpu=str(gpu);
 	
 	path_to_binary='/home/maheenrashid/Downloads/debugging_jacob/optical_flow_prediction_test';
@@ -138,9 +138,11 @@ def getCommandForTest(test_file,model_file,gpu,batch_size=100):
 	matlab_file_path=os.path.join(path_to_matlab,'loadResults_script.m');
 
 	mean_file=os.path.join(path_to_matlab,'opt_train_db.binaryproto');
-	template_file=os.path.join(path_to_matlab,'opt_test_coarse_xavier_template.prototxt');
-	clusters_file=os.path.join(path_to_matlab,'clusters.mat');
-	
+	if train_val_file is None:
+		template_file=os.path.join(path_to_matlab,'opt_test_coarse_xavier_template.prototxt');
+	else:
+		template_file=train_val_file;
+
 
 	out_dir=test_file[:test_file.rindex('/')];
 	out_dir_results=os.path.join(out_dir,'results');
@@ -151,7 +153,7 @@ def getCommandForTest(test_file,model_file,gpu,batch_size=100):
 
 
 	out_file_opt=os.path.join(out_dir,'opt_test_coarse_xavier.prototxt');
-
+	# print template_file
 	# replace the text in opt_test_coarse and save it in out_dir
 	with open(template_file,'rb') as f:
 		opt_data=f.read();
@@ -182,8 +184,8 @@ def main(argv):
 	matlab_file_path_template=os.path.join(path_to_matlab,'loadResults_script_template.m');
 	matlab_file_path=os.path.join(path_to_matlab,'loadResults_script.m');
 
-	# mean_file=os.path.join(path_to_matlab,'opt_train_db.binaryproto');
-	mean_file=os.path.join(path_to_matlab,'standard.binaryproto');
+	mean_file=os.path.join(path_to_matlab,'opt_train_db.binaryproto');
+	# mean_file=os.path.join(path_to_matlab,'standard.binaryproto');
 	template_file=os.path.join(path_to_matlab,'opt_test_coarse_xavier_template.prototxt');
 	clusters_file=os.path.join(path_to_matlab,'clusters.mat');
 	

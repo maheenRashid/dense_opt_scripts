@@ -190,7 +190,7 @@ def shrinkVideos((inpath,out_path)):
 	# /disk2/youtube_v2.2/videos/dog_13_5.avi -vf scale=320:240 /disk2/mayExperiments/youtube_subset/dog_13_5.avi
 
 
-def makeImTifViz(img_paths_all,tif_paths_all,out_file_html,out_dir_tif,num_clusters=40):
+def makeImTifViz(img_paths_all,tif_paths_all,out_file_html,out_dir_tif,num_clusters=40,disk_path='/disk2'):
 	out_files_tif_x=[os.path.join(out_dir_tif,img_name+'_x.png') for img_name in util.getFileNames(tif_paths_all,ext='False')];
 	out_files_tif_y=[os.path.join(out_dir_tif,img_name+'_y.png') for img_name in util.getFileNames(tif_paths_all,ext='False')];
 	
@@ -202,7 +202,7 @@ def makeImTifViz(img_paths_all,tif_paths_all,out_file_html,out_dir_tif,num_clust
 		saveTifGray(tif,out_file_x,out_file_y,num_clusters)
 	
 	# out_file_html=out_dir_tif+'.html';
-	img_paths_html=[[util.getRelPath(img_curr) for img_curr in img_list] for img_list in zip(img_paths_all,out_files_tif_x,out_files_tif_y)];
+	img_paths_html=[[util.getRelPath(img_curr,disk_path) for img_curr in img_list] for img_list in zip(img_paths_all,out_files_tif_x,out_files_tif_y)];
 	# captions_html=[[util.getFileNames([img_curr],ext=False)[0] for img_curr in img_list] for img_list in zip(img_paths_all,out_files_tif_x,out_files_tif_y)];
 	captions_html=[['Image','Tif_x','Tif_y']]*len(img_paths_html);
 	visualize.writeHTML(out_file_html,img_paths_html,captions_html);
@@ -223,28 +223,44 @@ def script_findMinCluster(clusters_file,new_flag=False):
 	return min_idx,clusters;
 
 def main():
+	train_file='/disk3/maheen_data/ft_youtube_40_images_cluster_suppress_yjConfig/train.txt'
+	files=util.readLinesFromFile(train_file);
+	random.shuffle(files);
+	files=files[:100];
+	img_paths_all=[line[:line.index(' ')] for line in files];
+	tif_paths_all=[line[line.index(' ')+1:] for line in files];
+	num_clusters=40;
 
+	out_dir='/disk3/maheen_data/debug_networks';
+	util.mkdir(out_dir);
+
+	out_dir_tif=os.path.join(out_dir,'tif');
+	util.mkdir(out_dir_tif);
+	out_file_html=os.path.join(out_dir,'tif_suppressCluster.html');
+
+	out_files_tif_x=[os.path.join(out_dir_tif,img_name+'_x.png') for img_name in util.getFileNames(tif_paths_all,ext='False')];
+	out_files_tif_y=[os.path.join(out_dir_tif,img_name+'_y.png') for img_name in util.getFileNames(tif_paths_all,ext='False')];
+	
+
+	for tif_path,out_file_x,out_file_y in zip(tif_paths_all,out_files_tif_x,out_files_tif_y):
+		# print tif_path
+		tif=scipy.misc.imread(tif_path);
+		# print np.min(tif[:,:,:2]),np.max(tif[:,:,:2])
+		assert np.min(tif[:,:,:2])>0 and np.max(tif[:,:,:2])<num_clusters+1;
+		saveTifGray(tif,out_file_x,out_file_y,num_clusters)
+	
+
+	makeImTifViz(img_paths_all,tif_paths_all,out_file_html,out_dir_tif,num_clusters=40,disk_path='disk3')
+
+
+	return
 	clusters_file='/disk2/mayExperiments/youtube_subset_new_cluster/clusters.mat';
 	clusters_ucf='/home/maheenrashid/Downloads/debugging_jacob/optical_flow_prediction_test/examples/opticalflow/clusters.mat';
 	min_idx_new,C_new=script_findMinCluster(clusters_file,new_flag=True);
 
 	min_idx_ucf,C_ucf=script_findMinCluster(clusters_ucf,new_flag=False);
 	print min_idx_new,min_idx_ucf
-
-	# clusters_file_alt='/disk2/mayExperiments/youtube_clusters/clusters.mat';
-	# clusters_alt=scipy.io.loadmat(clusters_file)['C'];
-	# # clusters=clusters['C']	
-
-	# print np.array_equal(clusters,clusters_alt);
-
-	print clusters.shape;
-	norms=np.linalg.norm(clusters,axis=1);
-	min_idx=np.argmin(norms);
-	print norms.shape;
-	# print np.min(norms);
-	# print np.argmin(norms);
-
-	print 'MIN INFO', min_idx,norms[min_idx],clusters[min_idx,:]
+	
 
 
 

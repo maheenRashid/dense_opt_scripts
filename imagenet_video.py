@@ -9,10 +9,10 @@ def main():
 	mapping_file=os.path.join(dir_meta,'devkit/data/map_vid.txt');
 	video_anno_meta=os.path.join(dir_meta,'ImageSet_initial','VID');
 	path_to_vid=os.path.join(dir_meta,'Data/VID/snippets/train');
-	out_dir_vids='/disk3/maheen_data/subset_for_training';
+	out_dir_vids='/disk3/maheen_data/all_training';
 	util.mkdir(out_dir_vids);
 	out_file_sh=os.path.join(out_dir_vids,'map_to_input.txt');
-	num_to_pick=10;
+	num_to_pick=-1;
 
 	map_data=util.readLinesFromFile(mapping_file);
 	map_data=[tuple(line.split(' ')) for line in map_data]
@@ -38,22 +38,34 @@ def main():
 		if all_vids.count(vid)>1:
 			black_list.append(vid);
 
-	# print len(black_list);
+	print len(black_list);
+
+	# return
 	for black_listed in black_list:
 		for class_curr in vids.keys():
 			if black_listed in vids[class_curr]:
 				vids[class_curr].remove(black_listed);
 
+
 	picked_vids={};
 	for class_curr in vids.keys():
 		vids_curr=[];
-		for idx in range(num_to_pick):
+		if num_to_pick==-1:
+			num_to_pick_curr=len(vids[class_curr]);
+		else:
+			num_to_pick_curr=num_to_pick;
+
+		for idx in range(num_to_pick_curr):
 			vid_curr=vids[class_curr][idx];
 			vid_full_path=os.path.join(path_to_vid,vid_curr+'.mp4');
 			assert os.path.exists(vid_full_path);
 			vids_curr.append(vid_full_path);
 		picked_vids[class_curr]=vids_curr;
+	
+	for class_curr in picked_vids.keys():
+		print class_curr, len(picked_vids[class_curr]);
 		
+	# return	
 	
 	
 	in_files=[];

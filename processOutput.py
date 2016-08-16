@@ -39,7 +39,7 @@ def saveMatFloViz(flo_mat,out_file_viz,path_to_binary=None):
     while os.path.exists(out_file_temp):
         x=random.random();
         out_file_temp=str(x)+'.flo';
-
+    # pr
     util.writeFlowFile(flo_mat,out_file_temp);
     sh_command=path_to_binary+' '+out_file_temp+' '+out_file_viz;
     subprocess.call(sh_command,shell=True);
@@ -89,10 +89,14 @@ def assignToFlowSoftSize(data,clusters,size):
     return new_arr;    
 
 def readClustersFile(clusters_file):
-    with h5py.File(clusters_file,'r') as hf:
-        # print hf.keys();
-        C=np.array(hf.get('C'));
-    C=C.T    
+    try:
+        with h5py.File(clusters_file,'r') as hf:
+            # print hf.keys();
+            C=np.array(hf.get('C'));
+        C=C.T
+    except:
+        C=scipy.io.loadmat(clusters_file);
+        C=C['C'];
     return C;
 
 def readH5(h5_file):
@@ -717,27 +721,40 @@ def getRelevantFilesFromMatchFile(out_file_info,img_name):
     img_sizes=[img_sizes[idx] for idx in idx_rel];
     return h5_files,img_files,img_sizes
 
-def script_saveFlos(img_paths,dir_test,gpu,model_file,clusters_file,overwrite=False):
+
+def script_saveFlos(img_paths,dir_test,gpu,model_file,clusters_file,overwrite=False,train_val_file=None):
     test_file=os.path.join(dir_test,'test.txt');
     out_file_info=os.path.join(dir_test,'match_info.txt');
     out_dir_flo=os.path.join(dir_test,'flo_files');
     util.mkdir(out_dir_flo);
 
     C=readClustersFile(clusters_file);
+    # print overwrite
 
     if (not os.path.exists(test_file)) or overwrite:
         makeTestFile(img_paths,test_file);
+
         # call the network
-        command=stj.getCommandForTest(test_file,model_file,gpu);
+        # print train_val_file
+        command=stj.getCommandForTest(test_file,model_file,gpu,train_val_file=train_val_file);
+        # print command
+        # raw_input();
+
         # print command;
         # return
         subprocess.call(command,shell=True);
 
+
+    # print overwrite;
+    # raw_input();
     # # get the h5 and img file correspondences
     if (not os.path.exists(out_file_info)) or overwrite:
-        saveOutputInfoFile(os.path.join(dir_test,'results'),out_file_info);
+        # print 'hello'
+        saveOutputInfoFileMP(os.path.join(dir_test,'results'),out_file_info,img_paths)
+        # saveOutputInfoFile(os.path.join(dir_test,'results'),out_file_info);
 
     h5_files,img_files,img_sizes=parseInfoFile(out_file_info);
+    print len(h5_files)
     out_files_flo=[os.path.join(out_dir_flo,file_curr+'.flo') for file_curr in util.getFileNames(img_files,ext=False)];
     args=[];
     for idx in range(len(h5_files)):
@@ -751,12 +768,13 @@ def script_saveFlos(img_paths,dir_test,gpu,model_file,clusters_file,overwrite=Fa
     p.map(saveH5AsFloMP,args)
 
 
-def script_saveFlosAndViz(img_paths,dir_test,flo_viz_dir,gpu,model_file,clusters_file):
+def script_saveFlosAndViz(img_paths,dir_test,flo_viz_dir,gpu,model_file,clusters_file,train_val_file=None,overwrite=False):
     # h5_dir=os.path.join(dir_test,'h5');
     # flo_dir=os.path.join(dir_test,'flo');
     # flo_viz_dir=os.path.join(dir_test,'flo_viz');
     # util.mkdir(h5_dir);
-    script_saveFlos(img_paths,dir_test,gpu,model_file,clusters_file)
+    # print train_val_file,'script_saveFlosAndViz';
+    script_saveFlos(img_paths,dir_test,gpu,model_file,clusters_file,train_val_file=train_val_file,overwrite=overwrite)
     
     flo_dir=os.path.join(dir_test,'flo_files');
     
@@ -1076,6 +1094,13 @@ def script_saveFloPyramidsAndAverageEfficient(dir_meta,img_paths,grid_sizes,mode
             shutil.rmtree(dir_to_del);
 
 def main():
+    h5_file='/disk2/mayExperiments/flow_resolution_scratch/im_viz_padding_ft_nC_sZ_youtube/large_0.707106781187/COCO_val2014_000000000143_pred_flo/results/109.h5';
+    data=readH5(h5_file)[0]
+    
+    print data.shape
+    print data[:,10,10];
+
+    return
 
 
     # out_dir='/disk2/aprilExperiments/flo_subdivision_actual'
